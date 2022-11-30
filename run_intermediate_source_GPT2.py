@@ -6,15 +6,7 @@ import argparse
 from transformers import TextDataset, DataCollatorForLanguageModeling
 from transformers import GPT2Tokenizer, GPT2LMHeadModel, GPT2ForSequenceClassification
 from transformers import Trainer, TrainingArguments
-
-
-def load_dataset(file_path, tokenizer, block_size=128):
-    dataset = TextDataset(
-        tokenizer=tokenizer,
-        file_path=file_path,
-        block_size=block_size,
-    )
-    return dataset
+import utils
 
 
 def load_data_collator(tokenizer, mlm=False):
@@ -25,24 +17,19 @@ def load_data_collator(tokenizer, mlm=False):
     return data_collator
 
 
-def train(train_file_path, model_name,
+def train(dataset_name,
+          model_name,
           output_dir,
           overwrite_output_dir,
           per_device_train_batch_size,
           num_train_epochs,
-         max_steps,
+          max_steps,
           save_total_limit):
     tokenizer = GPT2Tokenizer.from_pretrained(model_name)
-    train_dataset = load_dataset(train_file_path, tokenizer)
+    train_dataset = utils.download_dataset(dataset_name)
     data_collator = load_data_collator(tokenizer)
 
-    tokenizer.save_pretrained(output_dir)
-
-
     model = GPT2LMHeadModel.from_pretrained(model_name)
-
-
-    model.save_pretrained(output_dir)
 
     training_args = TrainingArguments(
         output_dir=output_dir,
@@ -61,14 +48,15 @@ def train(train_file_path, model_name,
     )
 
     trainer.train()
-    trainer.save_model()
+    trainer.save_model(output_dir)
+
 
 def main():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--train_file_path", default=None, type=str, required=True,
-                        help="Path to intermediate source task or target task data set.")
-    parser.add_argument("--output_dir", default=None, type=str, required=True,
+    parser.add_argument("--dataset_name", default='squad', type=str,
+                        help="Dataset name of the intermediate source task.")
+    parser.add_argument("--output_dir", default='./pretrained_model', type=str,
                         help="The output directory where the model predictions and checkpoints will be written.")
     parser.add_argument("--model_name", default='gpt2', type=str,
                         help="Pretrained model name or directory")
@@ -85,7 +73,7 @@ def main():
 
     args = parser.parse_args()
     train(
-        train_file_path=args.train_file_path,
+        dataset_name=args.dataset_name,
         model_name=args.model_name,
         output_dir=args.output_dir,
         overwrite_output_dir=args.overwrite_output_dir,
@@ -94,6 +82,7 @@ def main():
         max_steps=args.max_steps,
         save_total_limit=args.save_total_limit
     )
+
 
 if __name__ == "__main__":
     main()
