@@ -19,7 +19,12 @@ def dataset_information(dataset: str) -> str:
         #           }],
         'quoref': [{'type': 'QA',
                     'url': 'HuggingFace'
-                    }]
+                    }],
+        'glue': [{'subset': 'sst2',
+                'type': 'TC',
+                'url': 'HuggingFace'
+                }]
+
     }
     if dataset in dict_dataset:
         result = dict_dataset[dataset]
@@ -87,8 +92,21 @@ def prepare_data_for_training_QA(train_dataset):
         'is_impossible': is_impossible_list})
     return data_train
 
+def prepare_data_for_training_TC(train_dataset):
+    sentence_list = []
+    label_list = []
+    n_sentence = len(train_dataset)
+    for s in range(n_sentence):
+        sentence_list.append(train_dataset[s]['sentence'])
+        label = [float(train_dataset[s]['label'])]
+        label_list.append(label)
 
-def convert_to_inputs(data_train):
+    data_train = pd.DataFrame({
+        'text': sentence_list,
+        'label': label_list})
+    return data_train
+
+def convert_to_inputs_QA(data_train):
     tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
     max_seq_length = 1000
     input_ids_list = []
@@ -218,12 +236,20 @@ def download_dataset(dataset_name):
     if data_info:
         type_dataset = data_info[0]['type']
         if type_dataset == 'QA':
-            dataset_json = load_dataset(dataset_name)['train']
-            data_train = prepare_data_for_training_QA(dataset_json)
-            data_feature = convert_to_inputs(data_train)
+            data_feature = load_dataset(dataset_name)['train']
+            data_feature = prepare_data_for_training_QA(data_feature)
+            data_feature = convert_to_inputs_QA(data_feature)
+            return data_feature
+        if type_dataset =='TC':
+            subset =data_info[0]['subset']
+            data_feature_train = load_dataset(dataset_name,subset )['train']
+            data_feature_train = prepare_data_for_training_TC(data_feature_train)
+            data_feature_test = load_dataset(dataset_name, subset)['validation']
+            data_feature_test  = prepare_data_for_training_TC(data_feature_test )
+            return data_feature_train, data_feature_test
     else:
         print('Exception: Dataset not found')
-    return data_feature
 
 
-#data_train = download_dataset('squad')
+
+#data_train = download_dataset('glue')
