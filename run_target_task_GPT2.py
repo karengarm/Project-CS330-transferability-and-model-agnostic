@@ -30,13 +30,14 @@ def tokenize(df: pd.DataFrame, tokenizer: GPT2TokenizerFast) :
 def compute_metrics(pred):
     labels = pred.label_ids
     pred = pred.predictions
-    pred = np.argmax(pred, axis=1)
+    mse = mean_squared_error(labels, pred)
 
+    pred = np.argmax(pred, axis=1)
     accuracy = accuracy_score(y_true=labels, y_pred=pred)
     recall = recall_score(y_true=labels, y_pred=pred)
     precision = precision_score(y_true=labels, y_pred=pred)
     f1 = f1_score(y_true=labels, y_pred=pred)
-    mse = mean_squared_error(labels, pred)
+
 
     return {"accuracy": accuracy, "precision": precision, "recall": recall, "f1": f1, "mse":mse}
 
@@ -69,6 +70,7 @@ def main():
         pad_token_id=config.pad_token_id,
         pad_token="<|endoftext|>",  # eos_token
     )
+
     tokenizer.pad_token
     model = GPT2ForSequenceClassification(config)
 
