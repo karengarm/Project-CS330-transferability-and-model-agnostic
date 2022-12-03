@@ -5,27 +5,55 @@ from tqdm.auto import tqdm
 from transformers import GPT2Tokenizer
 import torch
 from torch.utils.data import TensorDataset
-
-
+from transformers import TextDataset, DataCollatorForLanguageModeling
+import numpy as np
+import json
 def dataset_information(dataset: str) -> str:
     dict_dataset = {
         'squad_v2': [{'type': 'QA',
-                      'url': 'HuggingFace'
+                      'url': 'HuggingFace',
+                      'split': 'train'
                       }],
         'squad': [{'type': 'QA',
-                   'url': 'HuggingFace'}],
-        # 'mlqa': [{'type': 'QA',
-        #           'url': 'HuggingFace'
-        #           }],
+                   'url': 'HuggingFace',
+                   'split': 'train'}],
         'quoref': [{'type': 'QA',
-                    'url': 'HuggingFace'
+                    'url': 'HuggingFace',
+                    'split': 'train'
                     }],
+
+        'mlqa_de': [{'subset': 'mlqa.de.en',
+                     'type': 'QA',
+                     'split': 'test',
+                     'url': 'HuggingFace'
+                  }],
+        'mlqa_en': [{'subset': 'mlqa.en.en',
+                     'type': 'QA',
+                     'split': 'test',
+                     'url': 'HuggingFace'
+                  }],
+        'mlqa_es': [{'subset': 'mlqa.en.es',
+                     'type': 'QA',
+                     'split': 'test',
+                     'url': 'HuggingFace'
+                  }],
         'glue': [{'subset': 'sst2',
-                'type': 'TC',
-                'url': 'HuggingFace'
-                }]
+                  'type': 'TC',
+                  'url': 'HuggingFace',
+                  'split': 'train'
+                }],
+        'drop': [{'type': 'QA',
+                  'url': 'HuggingFace',
+                  'split': 'train'
+                    }],
+        'duorc': [{'subset': 'ParaphraseRC',
+                   'type': 'QA',
+                   'url': 'HuggingFace',
+                   'split': 'train'
+                  }],
 
     }
+
     if dataset in dict_dataset:
         result = dict_dataset[dataset]
     else:
@@ -34,6 +62,23 @@ def dataset_information(dataset: str) -> str:
 
     return result
 
+
+def load_dataset_TextDataset(file_path, block_size=128):
+    tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
+    dataset = TextDataset(
+        tokenizer=tokenizer,
+        file_path=file_path,
+        block_size=block_size,
+    )
+    return dataset
+
+
+def load_data_collator(tokenizer, mlm=False):
+    data_collator = DataCollatorForLanguageModeling(
+        tokenizer=tokenizer,
+        mlm=mlm,
+    )
+    return data_collator
 
 def is_whitespace(c):
     if c == " " or c == "\t" or c == "\r" or c == "\n" or ord(c) == 0x202F:
@@ -156,7 +201,7 @@ def convert_to_inputs_QA(data_train):
         tokens.append("[SEP]")
         segment_ids.append(1)
 
-        # LOOK : tokens of the example with [CLS] at the begining and [SEP] at the end
+        # tokens of the example with [CLS] at the begining and [SEP] at the end
         input_ids = tokenizer.convert_tokens_to_ids(tokens)
         input_mask = [1] * len(input_ids)
 
@@ -230,26 +275,47 @@ def add_end_index(answers, contexts):
     return new_answers
 
 
-def download_dataset(dataset_name):
+def download_dataset(dataset_name, train):
     data_feature = None
     data_info = dataset_information(dataset_name)
     if data_info:
         type_dataset = data_info[0]['type']
+        split_set = data_info[0]['split']
+        dataset_with_start = ['squad', 'quoref', 'mlqa_de', 'mlqa_en', 'mlqa_es']
         if type_dataset == 'QA':
-            data_feature = load_dataset(dataset_name)['train']
-            data_feature = prepare_data_for_training_QA(data_feature)
-            data_feature = convert_to_inputs_QA(data_feature)
-            return data_feature
+            if dataset_name in dataset_with_start:
+                if dataset_name.startswith('mlqa_'):
+                    dataset_name = 'mlqa'
+                    subset = data_info[0]['subset']
+                    data_feature = load_dataset(dataset_name, subset, split=split_set)
+                else:
+                    data_feature = load_dataset(dataset_name, split=split_set)
+                data_feature = prepare_data_for_training_QA(data_feature)
+                data_feature = convert_to_inputs_QA(data_feature)
+            else:
+                if dataset_name.startswith('duorc'):
+                    subset = data_info[0]['subset']
+                    data_feature = load_dataset(dataset_name, subset,split='train')
+                else:
+                    data_feature = load_dataset(dataset_name, split = 'train')
+                examples = []
+                #ids = np.random.choice(len(data_feature), int(0.33*len(data_feature)), replace=False)
+                for i in range(len(data_feature)):
+                    examples.append(data_feature[i])
+                    # Export datasets to json
+                with open('temp_dataset.json', 'w') as fp:
+                    json.dump({'data': examples}, fp)
+                data_feature = load_dataset_TextDataset('temp_dataset.json', block_size=128)
         if type_dataset =='TC':
-            subset =data_info[0]['subset']
-            data_feature_train = load_dataset(dataset_name,subset )['train']
-            data_feature_train = prepare_data_for_training_TC(data_feature_train)
-            data_feature_test = load_dataset(dataset_name, subset)['validation']
-            data_feature_test  = prepare_data_for_training_TC(data_feature_test )
-            return data_feature_train, data_feature_test
+            subset = data_info[0]['subset']
+            if train:
+                data_feature = load_dataset(dataset_name,subset, split=split_set)
+                data_feature = prepare_data_for_training_TC(data_feature)
+            else:
+                data_feature = load_dataset(dataset_name, subset)['validation']
+                data_feature = prepare_data_for_training_TC(data_feature)
     else:
         print('Exception: Dataset not found')
+    return data_feature
 
-
-
-#data_train = download_dataset('glue')
+data_train = download_dataset('drop', True)

@@ -3,8 +3,8 @@
 Author: Karen Garcia"""
 
 import argparse
-from transformers import TextDataset, DataCollatorForLanguageModeling
-from transformers import GPT2Tokenizer, GPT2LMHeadModel, GPT2ForSequenceClassification
+from transformers import DataCollatorForLanguageModeling
+from transformers import GPT2Tokenizer, GPT2LMHeadModel
 from transformers import Trainer, TrainingArguments
 import utils
 
@@ -25,10 +25,14 @@ def train(dataset_name,
           num_train_epochs,
           max_steps,
           save_total_limit):
+
+
     tokenizer = GPT2Tokenizer.from_pretrained(model_name)
-    train_dataset = utils.download_dataset(dataset_name)
+    print('Download dataset')
+    train_dataset = utils.download_dataset(dataset_name, True)
     data_collator = load_data_collator(tokenizer)
 
+    print('Prepare for training')
     model = GPT2LMHeadModel.from_pretrained(model_name)
 
     training_args = TrainingArguments(
@@ -44,9 +48,9 @@ def train(dataset_name,
         model=model,
         args=training_args,
         data_collator=data_collator,
-        train_dataset=train_dataset,
+        train_dataset=train_dataset
     )
-
+    print('Training')
     trainer.train()
     trainer.save_model(output_dir)
 
@@ -66,7 +70,7 @@ def main():
                         help="Batch size per GPU/CPU for training")
     parser.add_argument("--num_train_epochs", default=1, type=int,
                         help="Total number of training epochs to perform.")
-    parser.add_argument("--max_steps", default=1, type=int,
+    parser.add_argument("--max_steps", default=1000, type=int,
                         help="Total number of training steps to perform.")
     parser.add_argument("--save_total_limit", default=1, type=int,
                         help="Steps to save.")

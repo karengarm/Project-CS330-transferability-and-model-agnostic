@@ -56,7 +56,9 @@ def main():
 
     args = parser.parse_args()
 
-    train_df, test_df = utils.download_dataset('glue')
+    train_df = utils.download_dataset('glue', True)
+    test_df = utils.download_dataset('glue', False)
+
 
     config = GPT2Config.from_pretrained(
         args.pretrained_model,
