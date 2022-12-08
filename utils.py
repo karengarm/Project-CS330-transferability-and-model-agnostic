@@ -1,4 +1,7 @@
 # coding=utf-8
+""" Utilities for working with fine-tuning GPT2 on a intermediate tasks.
+Authors: Karen Garcia """
+
 from datasets import load_dataset
 import pandas as pd
 from tqdm.auto import tqdm
@@ -6,8 +9,8 @@ from transformers import GPT2Tokenizer
 import torch
 from torch.utils.data import TensorDataset
 from transformers import TextDataset, DataCollatorForLanguageModeling
-import numpy as np
 import json
+
 def dataset_information(dataset: str) -> str:
     dict_dataset = {
         'squad_v2': [{'type': 'QA',
