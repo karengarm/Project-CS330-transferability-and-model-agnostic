@@ -1,4 +1,4 @@
-#coding = utf - 8
+# coding=utf-8
 """ Fine-tuning GPT2ForSequenceClassification on a target tasks.
 Authors: Karen Garcia, Phillip Yao-Lakaschus"""
 import argparse
@@ -8,9 +8,10 @@ from datasets import load_dataset
 import io
 import os
 import torch
+import numpy as np
 from tqdm.notebook import tqdm
 from torch.utils.data import Dataset, DataLoader
-from sklearn.metrics import classification_report, accuracy_score, roc_auc_score
+from sklearn.metrics import classification_report, accuracy_score
 from transformers import GPT2Config
 from transformers import (
     GPT2Tokenizer,
@@ -20,7 +21,8 @@ from transformers import (
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-MAX_STEPS = 5000
+MAX_STEPS = 500
+EPOCHS = 20
 
 
 def download_data_set():
@@ -241,12 +243,12 @@ def validation(model, dataloader, device_):
 def main():
     parser = argparse.ArgumentParser()
 
-    # parser.add_argument("--pretrained_model", default='src/logs/gpt2-sm_tasks_ck1.sk1/model', type=str, help="Path to the pretrained_model.")
-    parser.add_argument("--pretrained_model", default='gpt2', type=str, help="Path to the pretrained_model.")
+    # parser.add_argument("--pretrained_model", default='src/logs/gpt2-sm_tasks_sst2_k_1/model', type=str, help="Path to the pretrained_model.")
+    # parser.add_argument("--pretrained_model", default='gpt2', type=str, help="Path to the pretrained_model.")
+    parser.add_argument("--pretrained_model", default='src/logs/qa_tasks_qa_set_high_div/model', type=str,
+                        help="Path to the pretrained_model.")
     parser.add_argument("--epochs", default=1, type=int,
                         help="Number of training epochs.")
-    parser.add_argument("--max_steps", default=10, type=int,
-                        help="Total number of training steps to perform.")
     parser.add_argument("--batch_size", default=16, type=int,
                         help="Number of batches.")
     parser.add_argument("--max_length", default=512, type=int,
@@ -319,44 +321,66 @@ def main():
     # Store the average loss after each epoch so we can plot them.
     all_loss = {'train_loss': [], 'val_loss': []}
     all_acc = {'train_acc': [], 'val_acc': []}
+    all_valid_preds = []
+    all_valid_labels = []
 
     # Loop through each epoch.
     print('Epoch')
-    for epoch in tqdm(range(args.epochs)):
+    for epoch in tqdm(range(EPOCHS)):
         print()
         print('Training on batches...')
         # Perform one full pass over the training set.
         train_labels, train_predict, train_loss = train(model, train_dataloader, optimizer, scheduler, device)
         train_acc = accuracy_score(train_labels, train_predict)
-        train_report = classification_report(train_labels, train_predict)
 
         # Get prediction form model on validation data.
         print('Validation on batches...')
         valid_labels, valid_predict, val_loss = validation(model, valid_dataloader, device)
         val_acc = accuracy_score(valid_labels, valid_predict)
-        val_report = classification_report(valid_labels, valid_predict)
 
         # Print loss and accuracy values to see how training evolves.
-        print(
-            "  train_loss: %.5f - val_loss: %.5f - train_acc: %.5f - valid_acc: %.5f" % (
-                train_loss, val_loss, train_acc, val_acc))
+        print("  train_loss: %.5f - val_loss: %.5f - train_acc: %.5f - valid_acc: %.5f" % (
+            train_loss, val_loss, train_acc, val_acc))
         print()
-        print('classification_report train')
-        print(train_report)
-        print()
-        print('classification_report val_report ')
-        print(val_report)
-        print()
-        print('AUC train_report ', roc_auc_score(train_labels, train_predict))
-        print()
-        print('AUC val_report ', roc_auc_score(valid_labels, valid_predict))
 
         # Store the loss value for plotting the learning curve.
+        print(classification_report(valid_labels, valid_predict))
+        # all_valid_preds.extend(valid_predict)
+        # all_valid_labels.extend(valid_labels)
+        # all_loss['train_loss'].append(train_loss)
+        # all_loss['val_loss'].append(val_loss)
+        # all_acc['train_acc'].append(train_acc)
+        # all_acc['val_acc'].append(val_acc)
+
+        model = GPT2ForSequenceClassification.from_pretrained(pretrained_model_name_or_path=args.pretrained_model,
+                                                              config=model_config)
+        model.resize_token_embeddings(len(tokenizer))
+        model.config.pad_token_id = model.config.eos_token_id
+        model.to(device)
+        print('Model loaded to `%s`' % device)
+        # Create data collator to encode text and labels into numbers.
+        gpt2_classificaiton_collator = Gpt2ClassificationCollator(use_tokenizer=tokenizer, labels_encoder=labels_ids)
+        optimizer = AdamW(model.parameters(), lr=5e-5, eps=1e-8)
+
+        scheduler = get_linear_schedule_with_warmup(optimizer,
+                                                    num_warmup_steps=int(MAX_STEPS / 5),
+                                                    num_training_steps=MAX_STEPS)
+        all_valid_preds.extend(valid_predict)
+        all_valid_labels.extend(valid_labels)
         all_loss['train_loss'].append(train_loss)
         all_loss['val_loss'].append(val_loss)
         all_acc['train_acc'].append(train_acc)
         all_acc['val_acc'].append(val_acc)
-
+    print('train_loss avg: ', sum(all_loss['train_loss']) / EPOCHS)
+    print('train_loss st: ', np.std(np.array(all_loss['train_loss'])))
+    print('val_loss', sum(all_loss['val_loss']) / EPOCHS)
+    print('val_loss st: ', np.std(np.array(all_loss['val_loss'])))
+    print('train_acc', sum(all_acc['train_acc']) / EPOCHS)
+    print('train_acc st: ', np.std(np.array(all_acc['train_acc'])))
+    print('val_acc', sum(all_acc['val_acc']) / EPOCHS)
+    print('val_acc st: ', np.std(np.array(all_acc['val_acc'])))
+    print(classification_report(all_valid_labels, all_valid_preds))
+    print("done")
 
 
 if __name__ == "__main__":

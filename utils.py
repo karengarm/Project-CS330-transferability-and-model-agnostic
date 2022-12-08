@@ -46,11 +46,16 @@ def dataset_information(dataset: str) -> str:
                   'url': 'HuggingFace',
                   'split': 'train'
                     }],
-        'duorc': [{'subset': 'ParaphraseRC',
+        'duorc-p': [{'subset': 'ParaphraseRC',
                    'type': 'QA',
                    'url': 'HuggingFace',
                    'split': 'train'
                   }],
+        'duorc-s': [{'subset': 'SelfRC',
+                     'type': 'QA',
+                     'url': 'HuggingFace',
+                     'split': 'train'
+                     }]
 
     }
 
@@ -294,6 +299,7 @@ def download_dataset(dataset_name, train):
                 data_feature = convert_to_inputs_QA(data_feature)
             else:
                 if dataset_name.startswith('duorc'):
+                    dataset_name= 'duorc'
                     subset = data_info[0]['subset']
                     data_feature = load_dataset(dataset_name, subset,split='train')
                 else:
@@ -318,4 +324,4 @@ def download_dataset(dataset_name, train):
         print('Exception: Dataset not found')
     return data_feature
 
-data_train = download_dataset('drop', True)
+#data_train = download_dataset('duorc-p', True)

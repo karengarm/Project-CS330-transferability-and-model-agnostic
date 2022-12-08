@@ -27,7 +27,7 @@ def train(dataset_name,
           save_total_limit):
 
 
-    tokenizer = GPT2Tokenizer.from_pretrained(model_name)
+    tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
     print('Download dataset')
     train_dataset = utils.download_dataset(dataset_name, True)
     data_collator = load_data_collator(tokenizer)
