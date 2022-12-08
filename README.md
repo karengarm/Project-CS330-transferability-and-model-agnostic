@@ -4,6 +4,15 @@ Code for our projec "Exploring transferability and model agnostic meta learning 
 
 ![plot](Poster_picture.PNG)
 
+## Task embeddings and diversity coefficient
+
+The diversity coefficient is a novel metric proposed to measure diversity of tasks for meta-learning benchmarks. It measures the expectation of the distance between tasks. In order to represent tasks we use Task2Vec embeddings, which are defined as the diagonal entries of the Fisher Information Matrix when a fixed probe neural network is used as feature extractor after a model is fine-tuned to the given task.
+In this example, we will compute the diversity coefficient between squad and sst2:
+
+``` 
+
+```
+
 ## Fine-tuning GPT2 on downstream NLP tasks
 
 For each (intermediate question answering tasks, text classification target task) group, we use a pretrained GPT2 model, fine-tune it sequentally on the intermediate tasks, and then fine-tune the resulting model on the text classification target task. We have separate code for fine-tuning GPT2 on each class of problems, including the intermediate task question answering and the target task text classification/regression. 
@@ -18,7 +27,11 @@ starting point to fine-tune on the target text classification task:
 !python run_target_task_GPT2_sst2_multiple.py --pretrained_model './pretrained_model_duorc-p'
 ```
 
+## Model Agnostic Meta Learning
 
+We adopt a Reptilian first-order MAML algorithm to question-answering tasks. This approach is suitable for compute-heavy QA
+tasks as it doesn’t require second derivatives and doesn’t unroll a computation graph. 
 
-
-
+In this example we use multiple intermediate source tasks to train the model:
+``` 
+```
