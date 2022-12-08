@@ -27,7 +27,7 @@ starting point to fine-tune on the target text classification task:
 !python run_target_task_GPT2_sst2_multiple.py --pretrained_model './pretrained_model_duorc-p'
 ```
 
-## Model Agnostic Meta Learning
+## Model Agnostic Meta Learning (MAML)
 
 We adopt a Reptilian first-order MAML algorithm to question-answering tasks. This approach is suitable for compute-heavy QA
 tasks as it doesn’t require second derivatives and doesn’t unroll a computation graph. 
