@@ -29,6 +29,7 @@ starting point to fine-tune on the target text classification task:
 We adopt a Reptilian first-order MAML algorithm to question-answering tasks. This approach is suitable for compute-heavy QA
 tasks as it doesn’t require second derivatives and doesn’t unroll a computation graph. 
 
-In this example we use multiple intermediate source tasks to train the model:
+In this example we use multiple intermediate source tasks squad, squad_v2 and subset SelfRC from duorc to train the MAML model:
 ``` 
+python maml_qa.py --tasks "squad,squad_v2,duorc;SelfRC"
 ```
