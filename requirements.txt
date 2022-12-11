@@ -1,2 +1,7 @@
 transformers
 wget
+torch
+pandas
+sklearn
+numpy
+datasets
