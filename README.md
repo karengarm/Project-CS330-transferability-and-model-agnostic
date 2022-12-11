@@ -31,5 +31,5 @@ tasks as it doesn’t require second derivatives and doesn’t unroll a computat
 
 In this example we use multiple intermediate source tasks squad, squad_v2 and subset SelfRC from duorc to train the MAML model:
 ``` 
-python maml_qa.py --tasks 'squad,squad_v2,duorc;SelfRC'
+!python maml_qa.py --tasks 'squad,squad_v2,duorc;SelfRC'
 ```
