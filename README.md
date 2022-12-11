@@ -7,7 +7,7 @@ Code for our projec "Exploring transferability and model agnostic meta learning 
 ## Task embeddings and diversity coefficient
 
 The diversity coefficient is a novel metric proposed to measure diversity of tasks for meta-learning benchmarks. It measures the expectation of the distance between tasks. In order to represent tasks we use Task2Vec embeddings, which are defined as the diagonal entries of the Fisher Information Matrix when a fixed probe neural network is used as feature extractor after a model is fine-tuned to the given task.
-To compute the diversity coefficient, you can use the jupyter notebook ComputeTaskEmbedding.ipynb.
+To compute the diversity coefficient, you can use the jupyter notebook ComputeTaskEmbedding.ipynb and to get source and target diversity use the script TaskDiversity.py.
 
 
 ## Fine-tuning GPT2 on downstream NLP tasks
